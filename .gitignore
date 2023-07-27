@@ -22,3 +22,4 @@ go.work
 
 # Incase the template didn't include this for some reason
 .env
+bin
