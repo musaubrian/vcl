@@ -10,9 +10,27 @@ import (
 )
 
 const WIDTH = 600
-const HEIGHT = 400
+const HEIGHT = 450
 const BOTTOM = HEIGHT - FONT_SIZE
 const FONT_SIZE = 40
+
+//	var pos = rl.Vector2{
+//		X: float32(WIDTH / 2),
+//		Y: float32(HEIGHT / 2),
+//	}
+var size = rl.Vector2{
+	X: 50,
+	Y: 50,
+}
+
+var pos = rl.Vector2{
+	X: float32(WIDTH / 2),
+	Y: float32(HEIGHT / 2),
+}
+var speed = rl.Vector2{
+	X: 3.0,
+	Y: 3.0 / 2,
+}
 
 func main() {
 	var vol float32 = 0.3
@@ -33,6 +51,7 @@ func main() {
 	if len(filePath) < 1 {
 		log.Fatal("YOU NEED TO PARSE IN PATH TO THE MUSIC FILE\n\n vcl -f ~/path/to/music")
 	}
+	// radius := 20
 
 	rl.InitWindow(WIDTH, HEIGHT, "VCL")
 	rl.InitAudioDevice()
@@ -40,7 +59,7 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
-	pause := false
+	pause := true
 
 	m := rl.LoadMusicStream(filePath)
 	rl.SetMusicVolume(m, vol)
@@ -50,30 +69,50 @@ func main() {
 	rl.SetWindowTitle(title)
 
 	for !rl.WindowShouldClose() {
+		v := fmt.Sprintf("VOL: %.1f", vol)
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 		rl.UpdateMusicStream(m)
 
-		v := fmt.Sprintf("VOL: %.1f", vol)
-		rl.DrawText(v, WIDTH-WIDTH+10, HEIGHT/100, FONT_SIZE/2, rl.LightGray)
-
-		if !rl.IsMusicStreamPlaying(m) {
-			rl.DrawCircle(WIDTH/2, HEIGHT/100+10, (WIDTH-HEIGHT)/20, rl.Red)
+		rec := rl.Rectangle{
+			X:      pos.X,
+			Y:      pos.Y,
+			Width:  size.X,
+			Height: size.Y,
 		}
+
+		rl.DrawText(v, 10, HEIGHT/100, FONT_SIZE/2, rl.LightGray)
+		if !pause {
+			pos.X += speed.X
+			pos.Y += speed.Y
+
+			if pos.X >= (float32(rl.GetRenderWidth())-float32(size.X)) || pos.X <= float32(size.X)/2 {
+				speed.X *= -1
+			}
+			if pos.Y >= float32(rl.GetRenderHeight())-float32(size.Y) || pos.Y <= float32(FONT_SIZE) {
+				speed.Y *= -1
+			}
+		}
+
 		if rl.IsMusicStreamPlaying(m) {
 			rl.DrawCircle(WIDTH/2, HEIGHT/100+10, (WIDTH-HEIGHT)/20, rl.Green)
+			rl.DrawRectangleRounded(rec, 0.15, 2, rl.Blue)
+		} else {
+			rl.DrawCircle(WIDTH/2, HEIGHT/100+10, (WIDTH-HEIGHT)/20, rl.Red)
+			rl.DrawRectangleRounded(rec, 0.15, 2, rl.Blue)
 		}
 		if !rl.IsMusicReady(m) {
 			rl.DrawText("FILE COULD NOT BE LOADED", WIDTH/4, HEIGHT/2, FONT_SIZE/2, rl.Red)
 		}
 
-		if rl.IsKeyPressed(rl.KeySpace) || rl.IsKeyPressed(rl.KeyP) {
+		if rl.IsKeyPressed(rl.KeySpace) {
 			pause = !pause
-			if !pause {
-				rl.PauseMusicStream(m)
-			} else {
-				rl.PlayMusicStream(m)
-			}
+		}
+
+		if pause {
+			rl.PauseMusicStream(m)
+		} else {
+			rl.PlayMusicStream(m)
 		}
 		if rl.IsKeyPressed(rl.KeyUp) {
 			vol = vol + 0.1
